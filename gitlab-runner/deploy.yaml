@@ -1,0 +1,113 @@
+---
+
+### This playbook is responsible for installing and configuring Gitlab Runner for our Kubernetes cluster
+
+- hosts: master
+  remote_user: root
+  connection: ssh
+  gather_facts: false     ### Don't need to gather facts because it's not used in script
+  vars_files:
+          - ./secrets.yaml     ### Encrypted yaml file to store tokens
+  tasks:
+          - name: Create Runner Namespace
+            kubernetes.core.k8s:
+                    name: gitlab-runner
+                    api_version: v1
+                    kind: Namespace
+                    state: present
+          - name: Deploy Runner ServiceAccount Manifest
+            kubernetes.core.k8s:     ### Kubernetes rule from Galaxy
+                    state: present     ### Deploy if not present aleardy
+                    definition: "{{ lookup('file', './manifests/ServiceAccount.yaml') | from_yaml }}"     ### Get manifest content from manifests/ServiceAccount.yaml
+                    apply: true     ### Apply manifest
+          - name: Deploy Runner Role Manifest
+            kubernetes.core.k8s:
+                    state: present
+                    definition: "{{ lookup('file', './manifests/Role.yaml') | from_yaml }}"     ### Get manifest content from manifests/Role.yaml
+                    apply: true
+          - name: Deploy Runner RoleBinding Manifest
+            kubernetes.core.k8s:
+                    state: present
+                    definition: "{{ lookup('file', './manifests/RoleBinding.yaml') | from_yaml }}"     ### Get manifest content from manifests/RoleBinding.yaml
+                    apply: true
+          - name: Register Runner to the project
+            uri:
+                    url: "https://git-test.kavano.org:8443/api/v4/runners"
+                    method: POST
+                    body_format: form-multipart
+                    status_code: [200, 201]
+                    body:
+                            token: "{{ registration_token }}"
+                            description: Kubernetes runner for snapp project
+                            tag_list: snapp-project,python
+            register: result
+          - set_fact:
+                  runner_token={{ result.json.token }}
+          - name: Get Runner ID
+            uri:
+                    url: "https://git-test.kavano.org:8443/api/v4/runners/all?tag_list=snapp-project,python&type=project_type"
+                    method: GET
+                    headers:
+                            PRIVATE-TOKEN: "{{ access_token }}"
+            register: result
+          - set_fact:
+                  runner_id={{ result.json[0].id }}
+          - name: Deploy Configmap
+            kubernetes.core.k8s:
+                    state: present
+                    apply: true
+                    definition:
+                      apiVersion: v1
+                      kind: ConfigMap
+                      metadata:
+                        name: gitlab-runner-config
+                        namespace: gitlab-runner
+                      data:
+                        config.toml: |-
+                          concurrent = 3
+                          check_interval = 0
+                          
+                          [session_server]
+                            session_timeout = 1800
+                          
+                          [[runners]]
+                            name = "Kubernetes runner for snapp project"
+                            url = "https://git-test.kavano.org:8443/"
+                            id = {{ runner_id }}
+                            token = "{{ runner_token }}"
+                            executor = "kubernetes"
+                            privileged = true
+                            [runners.custom_build_dir]
+                            [runners.cache]
+                              [runners.cache.s3]
+                              [runners.cache.gcs]
+                              [runners.cache.azure]
+                            [runners.kubernetes]
+                              host = ""
+                              bearer_token_overwrite_allowed = false
+                              privileged = true
+                              namespace = "gitlab-runner"
+                              namespace_overwrite_allowed = ""
+                              cpu_request = "100m"
+                              helper_cpu_request = "100m"
+                              cpu_limit = "200m"
+                              helper_cpu_limit = "200m"
+                              service_cpu_request = "100m"
+                              service_cpu_limit = "200m"
+                              memory_request = "256Mi"
+                              memory_limit = "512Mi"
+                              helper_memory_request = "256Mi"
+                              helper_memory_limit = "512Mi"
+                              service_memory_request = "256Mi"
+                              service_memory_limit = "512Mi"
+                              poll_timeout = 600
+                              poll_interval = 5
+                              [[runners.kubernetes.volumes.host_path]]
+                                name = "docker"
+                                mount_path = "/var/run/docker.sock"
+                                host_path = "/var/run/docker.sock"
+          - name: Deploy Runner Deployment Manifest
+            kubernetes.core.k8s:
+                    state: present
+                    definition: "{{ lookup('file', './manifests/Deployment.yaml') | from_yaml }}"
+                    apply: true

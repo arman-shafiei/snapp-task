@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project
+  namespace: snapp-project
+  labels:
+    app: python
+    env: dev
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: python
+  template:
+    metadata:
+      labels:
+        app: python
+    spec:
+      containers:
+        - image: reg-test.kavano.org/snapp-project:v2.1
+          imagePullPolicy: Always
+          name: project
+          ports:
+            - containerPort: 5000
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - /tmp/check.sh
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      imagePullSecrets:
+        - name: docker-registry
