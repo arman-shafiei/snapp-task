@@ -28,7 +28,9 @@ The Gitlab server is accessible by https://git-test.kavano.org:8443 and the Dock
 
 **NOTE**: The reason we used domain is because of security issues with self-signed ssl certificates.
 
-**NOTE**: To gain some power of Ansible with Kubernetes, we have installed some packages.
+**Ansible+Kubernetes**
+
+To gain some power of Ansible with Kubernetes, we have installed some packages.
 We have Run this command in Kubernetes control plane node:
 ```
 pip3 install kubernetes
@@ -45,6 +47,21 @@ ansible-galaxy collection install kubernetes.core
 - SSH_KEY
 
 ![alt text](images/gitlab.png)
+
+**Snapp Project namespace**
+
+Create the project namespace
+```
+kubectl create ns snapp-project
+```
+
+**Docker registry credentials**
+
+We've run this command in Kubernetes control plane node to store Docker registry credentials:
+```
+kubectl -n snapp-project create secret docker-registry docker-registry --docker-server=reg-test.kavano.org --docker-username=<username> --docker-password=<password>
+```
+ 
 
 Let's get started with files and directories and see what are they.
 
@@ -463,3 +480,11 @@ We have 3 approached to do so.
 - NodePort
 - Ingress
 - Metallb
+
+For this scenario we choose Ingress solution because it's beneficial and simple.
+The other two solutions are not really suitable for us. Why?
+**NodePort** is the simplest one but not doing any load balancing and we can't serve based on route or hostname.
+**Metallb** is a powerful tool but for it's complicated and adds overhead to this scenario. But if we want to deploy for an enterprise,
+we should use it.
+
+So, We use Ingress and define an Ingress object which is backed by our app service to route external traffic to our app.

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: snapp-project-service
+  namespace: snapp-project
+  labels:
+    app: python
+spec:
+  type: ClusterIP
+  selector:
+    app: python
+  ports:
+    - port: 5000
+      targetPort: 5000
