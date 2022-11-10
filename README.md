@@ -339,6 +339,8 @@ Now we need to deploy our application. We need the contents of **application** d
 
 ### repo
 
+**NOTE**: To see sample application repo please visit "https://github.com/arman-shafiei/python-flask-sample-app".
+
 Here we have our main code which is a sample code forked from "https://github.com/codefresh-contrib/python-flask-sample-app".
 This code is written in Python 3 and is simple flask app.
 
