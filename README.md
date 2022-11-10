@@ -2,15 +2,9 @@
 
 ## Introduction
 
-This project is the Snapp assignment and all tasks and documents have been put Here. The Repo contains Ansible playbook, Sample application repo, Dockerfile and Shell scripts.
-
-The file structure is as follows:
-
-- **application**: Contains files and scripts related to the application and its deployments.
-
-- **gitlab-runner**: Contains files and scripts related to deploying Gitlab Runner.
-
-- **ingress**: Contains Nginx Ingress files and objects.
+This project is the Snapp assignment and all tasks and documents have been put Here.
+The Repo contains Ansible playbook, Sample application repo, Dockerfile and Shell scripts.
+During this Document we show the actions and configurations we have done and why we did this.
 
 ## Prerequisites
 
@@ -40,7 +34,7 @@ Also, this command in your Ansible control node:
 ansible-galaxy collection install kubernetes.core
 ```
 
-**NOTE**: We need to define some variables as shown below in our Gitlab panel:
+**NOTE**: We need to define some variables as shown below in our Gitlab panel to our project:
 
 - DOCKER_PASSWORD
 - DOCKER_USERNAME
@@ -64,6 +58,16 @@ kubectl -n snapp-project create secret docker-registry docker-registry --docker-
  
 
 Let's get started with files and directories and see what are they.
+
+### Structure
+
+The file structure is as follows:
+
+- **application**: Contains files and scripts related to the application and its deployments.
+
+- **gitlab-runner**: Contains files and scripts related to deploying Gitlab Runner.
+
+- **ingress**: Contains Nginx Ingress files and objects.
 
 ## Gitlab Runner
 
@@ -457,6 +461,79 @@ All manifests related to deploying this app are here, including:
 - hpa.yaml
 - service.yaml
 
+**deployment.yaml**
+
+Used to deploy the application. Some of the blocks are explained below:
+```
+labels:
+    app: python
+    env: dev
+```
+Adds two label to this deployment so we can refer it some time later.
+```
+image: reg-test.kavano.org/snapp-project:v2.1
+```
+Uses image from our Docker registry.
+The image tag is changed during Gitlab pipeline execution.
+```
+livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - /tmp/check.sh
+```
+We have defined a custom health check here. It will use the check.sh script that was placed in our app repo.
+If the code execution returns non-zero code, the health check fails.
+```
+imagePullSecrets:
+        - name: docker-registry
+```
+To pull images from Docker registry we need to authenticate.
+We use authentication info we added in the beginning of this Doc.
+
+**hpa.yaml**
+
+This file is the horizontal pod auto-scaler which determines when a replica should scale down or up.
+
+Some special parts are:
+```
+scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: project
+```
+It Specifies to which object we are adding this auto-scaler.
+
+```
+minReplicas: 1
+maxReplicas: 3
+```
+Defines the minimum number of replicas the object should have even if it's been scaled down.
+Also the maximum replicas in case of scaling. up 
+
+```
+- type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+- type: Resource
+      resource:
+        name: memory
+        target:
+          type: AverageValue
+          averageValue: 100Mi
+```
+These two blocks tell Kubernetes the situation that this scale up and down must happen.
+The first one instructs Kubernetes to scale up when 80 percent of pods max allowed CPU is reached.
+The second one instructs Kubernetes to scale up when 100MB of pods max allowed Memory is reached.
+
+**service.yaml**
+
+This is creates a service of type ClusterIP for our deployment.
+Later we will use Ingress to route external traffic to this service.
+
 ### scripts
 
 There are 2 Shell scripts here which are used in our CICD process:
@@ -464,6 +541,21 @@ There are 2 Shell scripts here which are used in our CICD process:
 - deploy.sh
 - rollback.sh
 
+**deploy.sh**
+
+This script is called via Gitlab pipeline when a new release is going to get deployed.
+First script takes the current image tag in deployment.yaml file and stores it in a file called "old".
+Second replaces the image tag in deployment.yaml with the argument passed to it which is the commit tag
+Third runs "kubectl apply" command for deployment.yaml to deploy the changed image to cluster.
+Finally save current tag in a file named "current".
+
+**rollback.sh**
+
+This script is called via Gitlab pipeline when the rollback stage is triggered.
+First it fetches old tag from old file and stores it in "OLD_RELEASE" variable.
+Second replaces the image tag in deployment.yaml with the "OLD_RELEASE" variable.
+Third deploys the deployment.yaml with the changed image tag.
+Finally swaps the old and current files values.
 
 ## ingress
 
@@ -472,6 +564,23 @@ This directory contains the Ingress object for our app service.
 - ingress.yaml
 
 We use Nginx Ingress as content load balancer.
+It's configured to check if the Host header is "app-test.kavano.org" and the requested path begins with "/"
+which is everything.
+
+Now see some important parts:
+```
+ingressClassName: nginx
+```
+It is required for Nginx Ingress. We have to manually set Ingress Class Name.
+```
+backend:
+          service:
+            name: snapp-project-service
+            port:
+              number: 5000
+```
+Specifies which backend service it should send traffic if the rules are matched. Here we said use service with name "snapp-project-service"
+and send traffic to its 5000 port number.
 
 # Send traffic to our App
 
@@ -481,10 +590,12 @@ We have 3 approached to do so.
 - Ingress
 - Metallb
 
-For this scenario we choose Ingress solution because it's beneficial and simple.
+For this scenario we choose Ingress solution because it's beneficial and simple. We can define rules, change http to https
+and balance requests sent to backends.
 The other two solutions are not really suitable for us. Why?
 **NodePort** is the simplest one but not doing any load balancing and we can't serve based on route or hostname.
-**Metallb** is a powerful tool but for it's complicated and adds overhead to this scenario. But if we want to deploy for an enterprise,
+**Metallb** is a powerful layer 3 load balancer but for it's complicated and adds overhead to this scenario. But if we want to deploy for an enterprise,
 we should use it.
 
 So, We use Ingress and define an Ingress object which is backed by our app service to route external traffic to our app.
+If we deploy Ingress, it will expose a port which we can connect to it and see our app from outside using this port.

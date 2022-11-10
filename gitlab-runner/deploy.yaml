@@ -32,12 +32,12 @@
                     apply: true
           - name: Register Runner to the project
             uri:
-                    url: "https://git-test.kavano.org:8443/api/v4/runners"
+                    url: "https://git-test.kavano.org:8443/api/v4/runners"     ### The gitlab route to request for runners
                     method: POST
                     body_format: form-multipart
                     status_code: [200, 201]
                     body:
-                            token: "{{ registration_token }}"
+                            token: "{{ registration_token }}"     ### Use token defined in vault file
                             description: Kubernetes runner for snapp project
                             tag_list: snapp-project,python
             register: result
@@ -45,13 +45,13 @@
                   runner_token={{ result.json.token }}
           - name: Get Runner ID
             uri:
-                    url: "https://git-test.kavano.org:8443/api/v4/runners/all?tag_list=snapp-project,python&type=project_type"
+                    url: "https://git-test.kavano.org:8443/api/v4/runners/all?tag_list=snapp-project,python&type=project_type"     ### Request with query params "tag_list" and "type"
                     method: GET
                     headers:
-                            PRIVATE-TOKEN: "{{ access_token }}"
+                            PRIVATE-TOKEN: "{{ access_token }}"     ### Use authentication token provided in vault file
             register: result
           - set_fact:
-                  runner_id={{ result.json[0].id }}
+                  runner_id={{ result.json[0].id }}     ### Get the first element of list "json" which is our runner's specifications.
           - name: Deploy Configmap
             kubernetes.core.k8s:
                     state: present
