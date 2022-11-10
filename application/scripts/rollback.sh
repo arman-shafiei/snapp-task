@@ -10,5 +10,4 @@ kubectl apply -f ${PWD}/manifests/deployment.yaml
 
 export OLD_RELEASE=`cat ${PWD}/releases/old` && \
 cat ${PWD}/releases/current > ${PWD}/releases/old && \
-
 echo $OLD_RELEASE > ${PWD}/releases/current
