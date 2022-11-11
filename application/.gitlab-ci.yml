@@ -1,0 +1,69 @@
+### Define 3 stages
+stages:
+        - build
+        - deploy
+        - rollback
+
+### Variables which are not secret and used as plain text in pipeline
+variables:
+        IMAGE_NAME: "snapp-project"
+        IMAGE_TAG: $CI_COMMIT_TAG
+        DOCKER_HOST: tcp://localhost:2375
+        REGISTRY_ADDR: reg-test.kavano.org
+
+### Build Repo and push it to Docker registry
+build-stage:
+        stage: build
+        image: docker:20.10.21-dind
+        ### Run in "production" resource group in order to handle parallel issues
+        resource_group: production
+        tags:
+                - snapp-project
+        before_script:
+                ### Login to docker by environments provided in the Gitlab variables panel
+                - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $REGISTRY_ADDR
+                ### Start docker daemon
+                - dockerd --host tcp://127.0.0.1:2375 &
+                ### Wait 10 seconds for the daemon to become ready
+                - sleep 10
+        script:
+                ### Build Docker image in "host" network and tag it using the Git commit tag
+                - docker build --network host -t $REGISTRY_ADDR/$IMAGE_NAME:"$IMAGE_TAG" .
+                - docker push $REGISTRY_ADDR/$IMAGE_NAME:"$IMAGE_TAG"
+        only:
+                - tags
+
+### Deploy new release in Kubernetes master node
+deploy-stage:
+        stage: deploy
+        image: kroniak/ssh-client
+        ### Run in "production" resource group in order to handle parallel issues
+        resource_group: production
+        tags:
+                - snapp-project
+        script:
+                ### Set SSH key permission to 600 in order to pass ssh policies. SSH key value is provided in the Gitlab variables panel
+                - chmod 600 $SSH_KEY
+                ### Connect to server and execute the "deploy.sh" shell
+                - ssh -o StrictHostKeyChecking=no -i $SSH_KEY root@192.168.24.66 "
+                  /opt/snapp_project/scripts/deploy.sh $IMAGE_TAG
+                  "
+        only:
+                - tags
+
+### Rollback The deployed release
+rollback-stage:
+        ### Only get triggered manually and when "ROLLBACK" env is set to "true"
+        rules:
+                - if: $ROLLBACK == "true"
+                  when: manual
+        stage: rollback
+        image: kroniak/ssh-client
+        tags:
+                - snapp-project
+        script:
+                ### Set SSH key permission to "600" in order to pass ssh policies. SSH key value is provided in the Gitlab variables panel
+                - chmod 600 $SSH_KEY
+                - ssh -o StrictHostKeyChecking=no -i $SSH_KEY root@192.168.24.66 "
+                  /opt/snapp_project/scripts/rollback.sh
+                  "
