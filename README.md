@@ -334,10 +334,10 @@ ansible-playbook --ask-vault-pass deploy.yaml
 Now we need to deploy our application. We need the contents of **application** directory to do so. We have:
 
 - **manifests**: All manifests needed to deploy our app in Cluster.
-- **repo**: Main sample code, Gitlab CICD file and Dockerfile.
+- **sample-code**: Main sample code, Gitlab CICD file and Dockerfile.
 - **scripts**: Contains scripts which are needed to deploy a new release and keeping version history.
 
-### repo
+### sample-code
 
 **NOTE**: To see sample application repo please visit "https://github.com/arman-shafiei/python-flask-sample-app".
 
