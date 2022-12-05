@@ -22,7 +22,7 @@ spec:
         app: python
     spec:
       containers:
-        - image: reg-test.kavano.org/snapp-project:v2.1
+        - image: reg-test.arman-projects.com/snapp-project:v2.1
           imagePullPolicy: Always
           name: project
           ports:

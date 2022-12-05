@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: "app-test.kavano.org"
+  - host: "app-test.arman-projects.com"
     http:
       paths:
       - path: /

@@ -9,7 +9,7 @@ variables:
         IMAGE_NAME: "snapp-project"
         IMAGE_TAG: $CI_COMMIT_TAG
         DOCKER_HOST: tcp://localhost:2375
-        REGISTRY_ADDR: reg-test.kavano.org
+        REGISTRY_ADDR: reg-test.arman-projects.com
 
 ### Build Repo and push it to Docker registry
 build-stage:

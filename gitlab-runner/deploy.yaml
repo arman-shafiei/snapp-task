@@ -32,7 +32,7 @@
                     apply: true
           - name: Register Runner to the project
             uri:
-                    url: "https://git-test.kavano.org:8443/api/v4/runners"     ### The gitlab route to request for runners
+                    url: "https://git-test.arman-projects.com:8443/api/v4/runners"     ### The gitlab route to request for runners
                     method: POST
                     body_format: form-multipart
                     status_code: [200, 201]
@@ -45,7 +45,7 @@
                   runner_token={{ result.json.token }}
           - name: Get Runner ID
             uri:
-                    url: "https://git-test.kavano.org:8443/api/v4/runners/all?tag_list=snapp-project,python&type=project_type"     ### Request with query params "tag_list" and "type"
+                    url: "https://git-test.arman-projects.com:8443/api/v4/runners/all?tag_list=snapp-project,python&type=project_type"     ### Request with query params "tag_list" and "type"
                     method: GET
                     headers:
                             PRIVATE-TOKEN: "{{ access_token }}"     ### Use authentication token provided in vault file
@@ -72,7 +72,7 @@
                           
                           [[runners]]
                             name = "Kubernetes runner for snapp project"
-                            url = "https://git-test.kavano.org:8443/"
+                            url = "https://git-test.arman-projects.com:8443/"
                             id = {{ runner_id }}
                             token = "{{ runner_token }}"
                             executor = "kubernetes"

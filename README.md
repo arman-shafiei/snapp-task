@@ -17,7 +17,7 @@ Also we have another machine which our Gitlab server and Docker registry are dep
 
 - **OS**: CentOS 7 , **IP**:192.168.24.216 , **SSH-PORT**: 3031
 
-The Gitlab server is accessible by https://git-test.kavano.org:8443 and the Docker registry is accessible via https://reg-test.kavano.org.
+The Gitlab server is accessible by https://git-test.arman-projects.com:8443 and the Docker registry is accessible via https://reg-test.arman-projects.com.
  
 
 **NOTE**: The reason we used domain is because of security issues with self-signed ssl certificates.
@@ -53,7 +53,7 @@ kubectl create ns snapp-project
 
 We've run this command in Kubernetes control plane node to store Docker registry credentials:
 ```
-kubectl -n snapp-project create secret docker-registry docker-registry --docker-server=reg-test.kavano.org --docker-username=<username> --docker-password=<password>
+kubectl -n snapp-project create secret docker-registry docker-registry --docker-server=reg-test.arman-projects.com --docker-username=<username> --docker-password=<password>
 ```
  
 
@@ -135,7 +135,7 @@ Deploys the Gitlab Runner RoleBinding manifest on cluster. It will fetch the con
 ```
 - name: Register Runner to the project
             uri:
-                    url: "https://git-test.kavano.org:8443/api/v4/runners"
+                    url: "https://git-test.arman-projects.com:8443/api/v4/runners"
                     method: POST
                     body_format: form-multipart
                     status_code: [200, 201]
@@ -157,7 +157,7 @@ Stores the **token** of the result of POST request as an fact.
 ```
 - name: Get Runner ID
             uri:
-                    url: "https://git-test.kavano.org:8443/api/v4/runners/all?tag_list=snapp-project,python&type=project_type"
+                    url: "https://git-test.arman-projects.com:8443/api/v4/runners/all?tag_list=snapp-project,python&type=project_type"
                     method: GET
                     headers:
                             PRIVATE-TOKEN: "{{ access_token }}"
@@ -473,7 +473,7 @@ labels:
 ```
 Adds two label to this deployment so we can refer it some time later.
 ```
-image: reg-test.kavano.org/snapp-project:v2.1
+image: reg-test.arman-projects.com/snapp-project:v2.1
 ```
 Uses image from our Docker registry.
 The image tag is changed during Gitlab pipeline execution.
@@ -566,7 +566,7 @@ This directory contains the Ingress object for our app service.
 - ingress.yaml
 
 We use Nginx Ingress as content load balancer.
-It's configured to check if the Host header is "app-test.kavano.org" and the requested path begins with "/"
+It's configured to check if the Host header is "app-test.arman-projects.com" and the requested path begins with "/"
 which is everything.
 
 Now see some important parts:
