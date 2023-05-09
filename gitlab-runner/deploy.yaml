@@ -52,60 +52,11 @@
             register: result
           - set_fact:
                   runner_id={{ result.json[0].id }}     ### Get the first element of list "json" which is our runner's specifications.
-          - name: Deploy Configmap
+          - name: Deploy Configmap composed of the gitlab runner's configs
             kubernetes.core.k8s:
                     state: present
                     apply: true
-                    definition:
-                      apiVersion: v1
-                      kind: ConfigMap
-                      metadata:
-                        name: gitlab-runner-config
-                        namespace: gitlab-runner
-                      data:
-                        config.toml: |-
-                          concurrent = 3
-                          check_interval = 0
-                          
-                          [session_server]
-                            session_timeout = 1800
-                          
-                          [[runners]]
-                            name = "Kubernetes runner for snapp project"
-                            url = "https://git-test.arman-projects.com:8443/"
-                            id = {{ runner_id }}
-                            token = "{{ runner_token }}"
-                            executor = "kubernetes"
-                            privileged = true
-                            [runners.custom_build_dir]
-                            [runners.cache]
-                              [runners.cache.s3]
-                              [runners.cache.gcs]
-                              [runners.cache.azure]
-                            [runners.kubernetes]
-                              host = ""
-                              bearer_token_overwrite_allowed = false
-                              privileged = true
-                              namespace = "gitlab-runner"
-                              namespace_overwrite_allowed = ""
-                              cpu_request = "100m"
-                              helper_cpu_request = "100m"
-                              cpu_limit = "200m"
-                              helper_cpu_limit = "200m"
-                              service_cpu_request = "100m"
-                              service_cpu_limit = "200m"
-                              memory_request = "256Mi"
-                              memory_limit = "512Mi"
-                              helper_memory_request = "256Mi"
-                              helper_memory_limit = "512Mi"
-                              service_memory_request = "256Mi"
-                              service_memory_limit = "512Mi"
-                              poll_timeout = 600
-                              poll_interval = 5
-                              [[runners.kubernetes.volumes.host_path]]
-                                name = "docker"
-                                mount_path = "/var/run/docker.sock"
-                                host_path = "/var/run/docker.sock"
+                    definition: "{{ lookup('file', './manifests/Configs.yaml') | from_yaml }}"
           - name: Deploy Runner Deployment Manifest
             kubernetes.core.k8s:
                     state: present
