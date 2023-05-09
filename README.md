@@ -546,18 +546,18 @@ There are 2 Shell scripts here which are used in our CICD process:
 **deploy.sh**
 
 This script is called via Gitlab pipeline when a new release is going to get deployed.
-First script takes the current image tag in "deployment.yaml" file and stores it in a file called "old".
-Second replaces the image tag in "deployment.yaml" with the argument passed to it which is the commit tag
-Third runs "kubectl apply" command for "deployment.yaml" to deploy the changed image to cluster.
-Finally save current tag in a file named "current".
+First, script takes the current image tag in "deployment.yaml" file and stores it in a file called "old"
+Second, replaces the image tag in "deployment.yaml" with the argument passed to it which is the commit tag.
+Third, runs "kubectl apply" command for "deployment.yaml" to deploy the changed image to cluster.
+Finally, save current tag in a file named "current".
 
 **rollback.sh**
 
 This script is called via Gitlab pipeline when the rollback stage is triggered.
-First it fetches old tag from old file and stores it in "OLD_RELEASE" variable.
-Second replaces the image tag in "deployment.yaml" with the "OLD_RELEASE" variable.
-Third deploys the "deployment.yaml" with the changed image tag.
-Finally swaps the old and current files values.
+First, it fetches old tag from old file and stores it in "OLD_RELEASE" variable.
+Second, replaces the image tag in "deployment.yaml" with the "OLD_RELEASE" variable.
+Third, deploys the "deployment.yaml" with the changed image tag.
+Finally, swaps the old and current files values.
 
 ## ingress
 
