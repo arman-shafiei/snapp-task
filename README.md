@@ -98,52 +98,52 @@ We used "secrets.yaml" file here which contains our tokens and we will use the t
 Now Let's explore the "tasks" area.
 ```
 - name: Create Runner Namespace
-            kubernetes.core.k8s:
-                    name: gitlab-runner
-                    api_version: v1
-                    kind: Namespace
-                    state: present
+  kubernetes.core.k8s:
+           name: gitlab-runner
+           api_version: v1
+           kind: Namespace
+           state: present
 ```
 Creates the "gitlab-runner" name space. The runner will be run in this name space.
 ```
 - name: Deploy Runner ServiceAccount Manifest
-            kubernetes.core.k8s:
-                    state: present
-                    definition: "{{ lookup('file', './manifests/ServiceAccount.yaml') | from_yaml }}"
-                    apply: true 
+  kubernetes.core.k8s:
+           state: present
+           definition: "{{ lookup('file', './manifests/ServiceAccount.yaml') | from_yaml }}"
+           apply: true 
 ```
 Deploys the Gitlab Runner ServiceAccount manifest on cluster. It will fetch the content of "ServiceAccount.yaml" inside manifests directory.
 
 ```
 - name: Deploy Runner Role Manifest
-            kubernetes.core.k8s:
-                    state: present
-                    definition: "{{ lookup('file', './manifests/Role.yaml') | from_yaml }}"
-                    apply: true
+  kubernetes.core.k8s:
+           state: present
+           definition: "{{ lookup('file', './manifests/Role.yaml') | from_yaml }}"
+           apply: true
 ```
 Deploys the Gitlab Runner Role manifest on cluster. It will fetch the content of "Role.yaml" inside manifests directory.
 
 ```
 - name: Deploy Runner RoleBinding Manifest
-            kubernetes.core.k8s:
-                    state: present
-                    definition: "{{ lookup('file', './manifests/RoleBinding.yaml') | from_yaml }}"
-                    apply: true
+  kubernetes.core.k8s:
+           state: present
+           definition: "{{ lookup('file', './manifests/RoleBinding.yaml') | from_yaml }}"
+           apply: true
 ```
 Deploys the Gitlab Runner RoleBinding manifest on cluster. It will fetch the content of "RoleBinding.yaml" inside manifests directory.
 
 ```
 - name: Register Runner to the project
-            uri:
-                    url: "https://git-test.arman-projects.com:8443/api/v4/runners"
-                    method: POST
-                    body_format: form-multipart
-                    status_code: [200, 201]
-                    body:
-                            token: "{{ registration_token }}"
-                            description: Kubernetes runner for snapp project
-                            tag_list: snapp-project,python
-            register: result
+  uri:
+            url: "https://git-test.arman-projects.com:8443/api/v4/runners"
+            method: POST
+            body_format: form-multipart
+            status_code: [200, 201]
+            body:
+                    token: "{{ registration_token }}"
+                    description: Kubernetes runner for snapp project
+                    tag_list: snapp-project,python
+  register: result
 ```
 Creates a POST request with body composed of Runner registration token, description and tags.
 This will return a dict response.
@@ -156,12 +156,12 @@ Stores the **token** of the result of POST request as an fact.
 
 ```
 - name: Get Runner ID
-            uri:
-                    url: "https://git-test.arman-projects.com:8443/api/v4/runners/all?tag_list=snapp-project,python&type=project_type"
-                    method: GET
-                    headers:
-                            PRIVATE-TOKEN: "{{ access_token }}"
-            register: result
+  uri:
+          url: "https://git-test.arman-projects.com:8443/api/v4/runners/all?tag_list=snapp-project,python&type=project_type"
+          method: GET
+          headers:
+                  PRIVATE-TOKEN: "{{ access_token }}"
+  register: result
 ```
 Creates a GET request with header composed of User's auth token.
 This will return a dict response.
@@ -174,21 +174,21 @@ Stores the **id** of the result of POST request as an fact.
 
 ```
 - name: Deploy Configmap
-            kubernetes.core.k8s:
-                    state: present
-                    apply: true
-                    definition:
-                      apiVersion: v1
-                      kind: ConfigMap
-                      metadata:
-                        name: gitlab-runner-config
-                        namespace: gitlab-runner
-                      data:
-                        config.toml: |-
-                          concurrent = 3
-                          .
-                          .
-                          .
+  kubernetes.core.k8s:
+           state: present
+           apply: true
+           definition:
+                apiVersion: v1
+                kind: ConfigMap
+                metadata:
+                     name: gitlab-runner-config
+                     namespace: gitlab-runner
+                data:
+                     config.toml: |-
+                     concurrent = 3
+                      .
+                      .
+                      .
 ```
 This part contains all Gitlab Runner configuration which must exists in "/etc/gitlab-runner/config.toml" when Runner starts.
 It will define the config as ConfigMap and pass it to Kubernetes api-server.
@@ -196,10 +196,10 @@ NOTE: Some lines are emited to avoid unnecessary explanation.
 
 ```
 - name: Deploy Runner Deployment Manifest
-            kubernetes.core.k8s:
-                    state: present
-                    definition: "{{ lookup('file', './manifests/Deployment.yaml') | from_yaml }}"
-                    apply: true
+  kubernetes.core.k8s:
+           state: present
+           definition: "{{ lookup('file', './manifests/Deployment.yaml') | from_yaml }}"
+           apply: true
 ```
 Finally, the main Runner deployment manifest gets deployed by this part.
 It will fetch the content of "ServiceAccount.yaml" inside manifests directory.
